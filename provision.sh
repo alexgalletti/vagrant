@@ -1,9 +1,9 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 # Automatically provisions an Ubuntu 14.04 VM(64-bit)
 
 # Make vagrant user login as root right away because sometimes we just want to get shit done, you can ctrl+d or su back to vagrant if you want
-echo 'sudo -i -u root' > /home/vagrant/.bash_profile
+#echo 'sudo -i -u root' > /home/vagrant/.bash_profile
 
 # Change hostname to something more... reasonable
 hostname 'ubuntu-development'
@@ -26,7 +26,7 @@ rm -rf /etc/update-motd.d/51-cloudguest
 # apt-get install -y build-essential dkms
 
 # Will install the following: CURL, Git, Nginx, HTop, Screen, Nano, Node, NPM, MySQL(Percona drop-in replacement) and PHP(apc, curl, fpm, gd, json, mcrypt, sqlite, mysql, pear)
-apt-get install -y build-essential git curl nginx htop screen nano nodejs npm libmcrypt-dev percona-xtradb-cluster-server-5.5 php5 php5-dev php5-apcu php5-curl php5-fpm php5-gd php5-json php5-mcrypt php5-sqlite php5-mysql php-pear
+DEBIAN_FRONTEND=noninteractive aptitude install -q -y build-essential git curl nginx htop screen nano nodejs npm libmcrypt-dev percona-xtradb-cluster-server-5.5 php5 php5-dev php5-apcu php5-curl php5-fpm php5-gd php5-json php5-mcrypt php5-sqlite php5-mysql php-pear
 
 # Because PHP fails to recognize mcrypt... grrr
 ln -s /etc/php5/conf.d/mcrypt.ini /etc/php5/mods-available
@@ -36,14 +36,15 @@ php5enmod mcrypt
 ln -s /usr/bin/nodejs /usr/bin/node
 
 # Setup our projects directory that we'll share with our local machine
-mkdir -p /home/vagrant/www/
+mkdir -p /home/vagrant/www
+chown www-data:www-data /home/vagrant/www
 
 # Install composer. Use it! That's an order!
 curl -sS https://getcomposer.org/installer | php
 mv composer.phar /usr/bin/composer
 
 # Change user in php5-fpm pool to vagrant so we actually have permission for stuff
-sed -i 's/www-data/vagrant/g' /etc/php5/fpm/pool.d/www.conf
+#sed -i 's/www-data/vagrant/g' /etc/php5/fpm/pool.d/www.conf
 
 # Turn sendfile off in Nginx for vagrant
 sed -i 's/sendfile on/sendfile off/g' /etc/nginx/nginx.conf
@@ -60,20 +61,24 @@ server {
     error_log  /var/log/nginx/default.error.log notice;
 
     location / {
-        try_files $uri $uri/ /index.php$query_string;
+        try_files \$uri \$uri/ /index.php\$query_string;
         autoindex on;
     }
 
-    location ~* ^.+.(jpg|jpeg|gif|css|png|js|ico|html|xml|txt)$ {
+    location ~ ^/(?<dir>[a-zA-Z0-9_]+)/ {
+        try_files \$uri \$uri/ /\$dir/index.php\$query_string;
+    }
+
+    location ~* ^.+.(jpg|jpeg|gif|css|png|js|ico|html|xml|txt)\$ {
         expires max;
     }
 
-    location ~* \.php$ {
+    location ~* \.php\$ {
         fastcgi_index index.php;
         fastcgi_pass unix:/var/run/php5-fpm.sock;
         include fastcgi_params;
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        fastcgi_param SCRIPT_NAME $fastcgi_script_name;
+        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+        fastcgi_param SCRIPT_NAME \$fastcgi_script_name;
     }
 
     location ~ /\. {
@@ -83,7 +88,7 @@ server {
 EOL
 
 # Add convenience aliases for root
-cat > /root/.bash_aliases <<EOL
+cat > /home/vagrant/.bash_aliases <<EOL
 # Easier navigation: .., ..., ...., ....., ~ and -
 alias ..="cd .."
 alias ...="cd ../.."
@@ -105,7 +110,7 @@ else # OS X `ls`
 fi
 
 # List all files colorized in long format
-alias ls='ls -aFHhlLo ${colorflag}'
+alias ls='ls -aFHhlLo \${colorflag}'
 alias l="ls"
 
 # Always use color output for `ls`
@@ -115,8 +120,9 @@ export LS_COLORS='no=00:fi=00:di=01;34:ln=01;36:pi=40;33:so=01;35:do=01;35:bd=40
 alias sudo='sudo '
 
 # Reload the shell (i.e. invoke as a login shell)
-alias reload="exec $SHELL -l"
+alias reload="exec \$SHELL -l"
 EOL
 
-# Reboot the machine we just provisioned
-reboot
+# Restart the services we just provisioned
+service php5-fpm restart
+service nginx restart
