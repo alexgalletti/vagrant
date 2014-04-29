@@ -3,7 +3,7 @@
 
 Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu"
-  config.vm.provision :shell, :path => "vagrant/provision.sh"
+  config.vm.provision :shell, :path => "./provision.sh"
   config.vm.box_url = "https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-i386-vagrant-disk1.box"
   config.vm.network "forwarded_port", guest: 80, host: 8080, auto_correct: true
   config.vm.network "forwarded_port", guest: 3306, host: 8806, auto_correct: true

@@ -60,25 +60,26 @@ server {
     access_log  /var/log/nginx/default.access.log;
     error_log  /var/log/nginx/default.error.log notice;
 
-    location / {
-        try_files \$uri \$uri/ /index.php\$query_string;
-        autoindex on;
-    }
-
-    location ~ ^/(?<dir>[a-zA-Z0-9_]+)/ {
-        try_files \$uri \$uri/ /\$dir/index.php\$query_string;
-    }
-
     location ~* ^.+.(jpg|jpeg|gif|css|png|js|ico|html|xml|txt)\$ {
         expires max;
     }
 
     location ~* \.php\$ {
         fastcgi_index index.php;
+        fastcgi_split_path_info ^(.+\.php)(.*)\\$;
         fastcgi_pass unix:/var/run/php5-fpm.sock;
         include fastcgi_params;
         fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
         fastcgi_param SCRIPT_NAME \$fastcgi_script_name;
+    }
+
+    location / {
+        try_files \$uri \$uri/ /index.php\$query_string;
+        autoindex on;
+    }
+
+    location ~ ^/(?<dir>[^/]+) {
+        try_files \$uri /\$dir/index.php\$query_string;
     }
 
     location ~ /\. {
