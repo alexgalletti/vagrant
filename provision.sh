@@ -64,22 +64,22 @@ server {
         expires max;
     }
 
-    location ~* \.php\$ {
-        fastcgi_index index.php;
-        fastcgi_split_path_info ^(.+\.php)(.*)\\$;
+    location ~ ^(.+\.php)(.*)$ {
+        fastcgi_split_path_info ^(.+\.php)(.*)\$;
         fastcgi_pass unix:/var/run/php5-fpm.sock;
-        include fastcgi_params;
+        fastcgi_index index.php;
         fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
-        fastcgi_param SCRIPT_NAME \$fastcgi_script_name;
+        fastcgi_param PATH_INFO \$fastcgi_path_info;
+        include fastcgi_params;
     }
 
     location / {
-        try_files \$uri \$uri/ /index.php\$query_string;
+        try_files \$uri \$uri/ /index.php\$is_args\$args;
         autoindex on;
     }
 
     location ~ ^/(?<dir>[^/]+) {
-        try_files \$uri /\$dir/index.php\$query_string;
+        try_files \$uri /\$dir/index.php\$is_args\$args;
     }
 
     location ~ /\. {
@@ -88,7 +88,7 @@ server {
 }
 EOL
 
-# Add convenience aliases for root
+# Add convenience aliases for vagrant user
 cat > /home/vagrant/.bash_aliases <<EOL
 # Easier navigation: .., ..., ...., ....., ~ and -
 alias ..="cd .."
