@@ -9,7 +9,7 @@
 hostname 'ubuntu-development'
 # Because the above is only temprary
 cat /dev/null > /etc/hostname
-echo 'ubuntu-developemnt' > /etc/hostname
+echo 'ubuntu-development' > /etc/hostname
 
 # Seriously, advertisements in a damn OS? Be gone!
 echo '[sysinfo]' > /etc/landscape/client.conf
